@@ -30,14 +30,14 @@ class MarvelCharacter {
   /// Cria uma instância de [MarvelCharacter] a partir de um [Map] JSON.
   factory MarvelCharacter.fromJson(Map<String, dynamic> json) {
     return MarvelCharacter(
-      id: json['id'].toString(),
-      name: json['name'] as String,
-      universe: json['universe'] as String,
-      imageUrl: json['imageUrl'] as String?,
-      alignment: json['alignment'] as String?,
-      powerType: json['powerType'] as String?,
-      skillType: json['skillType'] as String?,
-      description: json['description'] as String?,
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      universe: json['universe']?.toString() ?? '',
+      imageUrl: json['imageUrl']?.toString(),
+      alignment: json['alignment']?.toString(),
+      powerType: json['powerType']?.toString(),
+      skillType: json['skillType']?.toString(),
+      description: json['description']?.toString(),
       isCollected: json['isCollected'] as bool? ?? false,
     );
   }

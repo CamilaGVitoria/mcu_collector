@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../theme/app_colors.dart';
 import 'home_view.dart';
 
 class AuthView extends StatefulWidget {
@@ -12,22 +14,18 @@ class AuthView extends StatefulWidget {
 class _AuthViewState extends State<AuthView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController =
-      TextEditingController(); // Novo controller para confirmar senha
+  final _confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
   bool _isLogin = true;
 
-  static const Color marvelRed = Color(0xFFE23636);
-
   Future<void> _authenticate() async {
-    // Validação extra para o Cadastro
     if (!_isLogin) {
       if (_passwordController.text != _confirmPasswordController.text) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('As senhas não coincidem. Tente novamente.'),
-            backgroundColor: marvelRed,
+            backgroundColor: AppColors.marvelRed,
           ),
         );
         return;
@@ -49,20 +47,21 @@ class _AuthViewState extends State<AuthView> {
         );
       }
 
-      if (mounted) {
-        Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeView()));
-      }
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeView()),
+      );
     } on AuthException catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: marvelRed),
+        SnackBar(content: Text(e.message), backgroundColor: AppColors.marvelRed),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Erro inesperado ocorreu.'),
-          backgroundColor: marvelRed,
+          backgroundColor: AppColors.marvelRed,
         ),
       );
     } finally {
@@ -82,7 +81,6 @@ class _AuthViewState extends State<AuthView> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        // Imagem de fundo configurada
         decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/images/background.webp'),
@@ -94,15 +92,14 @@ class _AuthViewState extends State<AuthView> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Container(
-              // Card centralizado com as cores da Marvel
               constraints: const BoxConstraints(maxWidth: 400),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.85),
+                color: Colors.black.withValues(alpha: 0.85),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: marvelRed, width: 2),
+                border: Border.all(color: AppColors.marvelRed, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: marvelRed.withOpacity(0.3),
+                    color: AppColors.marvelRed.withValues(alpha: 0.3),
                     blurRadius: 15,
                     spreadRadius: 2,
                   ),
@@ -112,7 +109,6 @@ class _AuthViewState extends State<AuthView> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Logo / Título
                   const Text(
                     'MARVEL',
                     style: TextStyle(
@@ -120,7 +116,7 @@ class _AuthViewState extends State<AuthView> {
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 2,
-                      backgroundColor: marvelRed,
+                      backgroundColor: AppColors.marvelRed,
                     ),
                   ),
                   const Text(
@@ -134,7 +130,7 @@ class _AuthViewState extends State<AuthView> {
                   ),
                   const SizedBox(height: 32),
 
-                  // Campo E-mail
+                  // E-mail
                   TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -142,18 +138,20 @@ class _AuthViewState extends State<AuthView> {
                     decoration: InputDecoration(
                       labelText: 'E-mail',
                       labelStyle: const TextStyle(color: Colors.white70),
-                      prefixIcon: const Icon(Icons.email, color: marvelRed),
+                      prefixIcon:
+                          const Icon(Icons.email, color: AppColors.marvelRed),
                       enabledBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: Colors.grey.shade800),
                       ),
                       focusedBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(color: marvelRed, width: 2),
+                        borderSide:
+                            BorderSide(color: AppColors.marvelRed, width: 2),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Campo Senha
+                  // Senha
                   TextField(
                     controller: _passwordController,
                     obscureText: true,
@@ -161,17 +159,19 @@ class _AuthViewState extends State<AuthView> {
                     decoration: InputDecoration(
                       labelText: 'Senha',
                       labelStyle: const TextStyle(color: Colors.white70),
-                      prefixIcon: const Icon(Icons.lock, color: marvelRed),
+                      prefixIcon:
+                          const Icon(Icons.lock, color: AppColors.marvelRed),
                       enabledBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: Colors.grey.shade800),
                       ),
                       focusedBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(color: marvelRed, width: 2),
+                        borderSide:
+                            BorderSide(color: AppColors.marvelRed, width: 2),
                       ),
                     ),
                   ),
 
-                  // Campo Confirmar Senha (Aparece apenas no Cadastro)
+                  // Confirmar Senha (apenas no cadastro)
                   if (!_isLogin) ...[
                     const SizedBox(height: 16),
                     TextField(
@@ -181,15 +181,14 @@ class _AuthViewState extends State<AuthView> {
                       decoration: InputDecoration(
                         labelText: 'Confirmar Senha',
                         labelStyle: const TextStyle(color: Colors.white70),
-                        prefixIcon: const Icon(
-                          Icons.lock_outline,
-                          color: marvelRed,
-                        ),
+                        prefixIcon: const Icon(Icons.lock_outline,
+                            color: AppColors.marvelRed),
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: Colors.grey.shade800),
                         ),
                         focusedBorder: const OutlineInputBorder(
-                          borderSide: BorderSide(color: marvelRed, width: 2),
+                          borderSide:
+                              BorderSide(color: AppColors.marvelRed, width: 2),
                         ),
                       ),
                     ),
@@ -197,13 +196,13 @@ class _AuthViewState extends State<AuthView> {
 
                   const SizedBox(height: 32),
 
-                  // Botão de Ação (Entrar / Cadastrar)
+                  // Botão de Ação
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: marvelRed,
+                        backgroundColor: AppColors.marvelRed,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -231,12 +230,11 @@ class _AuthViewState extends State<AuthView> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Alternar entre Login e Cadastro
+                  // Alternar Login / Cadastro
                   TextButton(
                     onPressed: () {
                       setState(() {
                         _isLogin = !_isLogin;
-                        // Limpa os campos ao trocar de tela
                         _emailController.clear();
                         _passwordController.clear();
                         _confirmPasswordController.clear();

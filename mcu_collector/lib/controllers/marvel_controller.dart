@@ -13,61 +13,52 @@ class MarvelController extends ChangeNotifier {
 
   List<MarvelCharacter> _characters = [];
   bool _isLoading = false;
+  String? _errorMessage;
 
   // ---------- Getters ----------
 
-  /// Lista atual de personagens.
   List<MarvelCharacter> get characters => List.unmodifiable(_characters);
-
-  /// Indica se o controller está carregando dados.
   bool get isLoading => _isLoading;
-
-  /// Quantidade total de personagens coletados.
+  String? get errorMessage => _errorMessage;
   int get collectedCount => _characters.where((c) => c.isCollected).length;
-
-  /// Quantidade total de personagens na lista.
   int get totalCount => _characters.length;
 
-  /// ---------- Filtros & Busca ----------
+  // ---------- Filtros & Busca ----------
+
   final Set<String> _selectedAlignments = {};
   final Set<String> _selectedPowers = {};
   final Set<String> _selectedSkills = {};
   String _searchQuery = '';
-  bool _showOnlyCollected = false; // NOVA VARIÁVEL DO TOGGLE
+  bool _showOnlyCollected = false;
 
-  Set<String> get selectedAlignments => _selectedAlignments;
-  Set<String> get selectedPowers => _selectedPowers;
-  Set<String> get selectedSkills => _selectedSkills;
+  Set<String> get selectedAlignments => Set.unmodifiable(_selectedAlignments);
+  Set<String> get selectedPowers => Set.unmodifiable(_selectedPowers);
+  Set<String> get selectedSkills => Set.unmodifiable(_selectedSkills);
   String get searchQuery => _searchQuery;
-  bool get showOnlyCollected => _showOnlyCollected; // NOVO GETTER
+  bool get showOnlyCollected => _showOnlyCollected;
 
-  /// Alterna a visualização para mostrar apenas a coleção
   void toggleShowOnlyCollected(bool value) {
     _showOnlyCollected = value;
     notifyListeners();
   }
 
-  /// Retorna a lista de personagens aplicando filtros, busca e o toggle de coleção.
+  /// Retorna a lista de personagens aplicando todos os filtros ativos.
   List<MarvelCharacter> get filteredCharacters {
     return _characters.where((char) {
-      // Filtro de alinhamento
       final matchAlignment = _selectedAlignments.isEmpty ||
           _selectedAlignments.contains(char.alignment);
 
-      // Filtro de poder
       final matchPower = _selectedPowers.isEmpty ||
-          (_selectedPowers.any((power) => char.powerType != null && char.powerType!.contains(power)));
+          _selectedPowers.any((p) =>
+              char.powerType != null && char.powerType!.contains(p));
 
-      // Filtro de habilidade
       final matchSkill = _selectedSkills.isEmpty ||
-          (_selectedSkills.any((skill) => char.skillType != null && char.skillType!.contains(skill)));
+          _selectedSkills.any((s) =>
+              char.skillType != null && char.skillType!.contains(s));
 
-      // Busca por nome
-      final matchSearch =
-          _searchQuery.isEmpty ||
+      final matchSearch = _searchQuery.isEmpty ||
           char.name.toLowerCase().contains(_searchQuery.toLowerCase());
 
-      // NOVO: Filtro do Toggle (Só Capturados)
       final matchCollected = !_showOnlyCollected || char.isCollected;
 
       return matchAlignment &&
@@ -117,19 +108,22 @@ class MarvelController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---------- Métodos públicos ----------
+  // ---------- Carregamento ----------
 
   Future<void> loadCharacters() async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
-    // 1. Busca a base completa diretamente da tabela 'characters' no Supabase
     final freshCharacters = await _fetchCharactersFromSupabase();
 
-    // 2. Busca apenas os IDs dos personagens coletados pelo usuário
+    if (freshCharacters.isEmpty) {
+      _errorMessage =
+          'Não foi possível carregar os personagens. Verifique sua conexão.';
+    }
+
     final collectedIds = await _storageService.loadCollectedIds();
 
-    // 3. Mescla as informações
     for (var character in freshCharacters) {
       if (collectedIds.contains(character.id)) {
         character.isCollected = true;
@@ -141,16 +135,16 @@ class MarvelController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Faz a requisição GET para a tabela de personagens no Supabase já em ordem alfabética
   Future<List<MarvelCharacter>> _fetchCharactersFromSupabase() async {
     try {
       final response = await Supabase.instance.client
           .from('characters')
           .select()
-          .order('name', ascending: true); // <-- A mágica acontece nesta linha!
+          .order('name', ascending: true);
 
       return (response as List)
-          .map((json) => MarvelCharacter.fromJson(json as Map<String, dynamic>))
+          .map((json) =>
+              MarvelCharacter.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       debugPrint('Erro ao buscar do Supabase: $e');
@@ -158,17 +152,23 @@ class MarvelController extends ChangeNotifier {
     }
   }
 
+  // ---------- Coleção ----------
+
   Future<void> toggleCollected(String id) async {
-    // 1. Encontra o personagem na lista atual
     final int index = _characters.indexWhere((c) => c.id == id);
     if (index == -1) return;
 
-    // 2. Altera o status visualmente na hora
     final character = _characters[index];
     character.isCollected = !character.isCollected;
     notifyListeners();
 
-    // 3. Salva a alteração no banco de dados do Supabase
-    await _storageService.toggleCharacter(character.id, character.isCollected);
+    try {
+      await _storageService.toggleCharacter(
+          character.id, character.isCollected);
+    } catch (e) {
+      character.isCollected = !character.isCollected;
+      notifyListeners();
+      debugPrint('Erro ao salvar coleção: $e');
+    }
   }
 }
