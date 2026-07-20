@@ -1,9 +1,12 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:mcu_collector/views/auth_view.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../controllers/marvel_controller.dart';
 import '../models/marvel_character.dart';
+import '../theme/app_colors.dart';
+import '../widgets/character_image_card.dart';
+import 'auth_view.dart';
 import 'character_detail_view.dart';
 
 class HomeView extends StatefulWidget {
@@ -14,7 +17,6 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  final MarvelController _controller = MarvelController();
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
 
@@ -45,40 +47,32 @@ class _HomeViewState extends State<HomeView> {
     'Piloto',
   ];
 
-  static const Color marvelRed = Color(0xFFE23636);
-
   @override
   void initState() {
     super.initState();
-    _controller.addListener(_onControllerChanged);
-    _controller.loadCharacters();
+    // Carrega os personagens após o primeiro frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MarvelController>().loadCharacters();
+    });
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_onControllerChanged);
-    _controller.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  void _onControllerChanged() {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void _toggleSearch() {
+  void _toggleSearch(MarvelController controller) {
     setState(() {
       _isSearching = !_isSearching;
       if (!_isSearching) {
         _searchController.clear();
-        _controller.setSearchQuery('');
+        controller.setSearchQuery('');
       }
     });
   }
 
-  void _showFilterDialog() {
+  void _showFilterDialog(MarvelController controller) {
     showDialog(
       context: context,
       builder: (context) {
@@ -89,7 +83,7 @@ class _HomeViewState extends State<HomeView> {
           ),
           title: const Row(
             children: [
-              Icon(Icons.filter_list, color: marvelRed),
+              Icon(Icons.filter_list, color: AppColors.marvelRed),
               SizedBox(width: 8),
               Text(
                 'Filtros',
@@ -107,7 +101,6 @@ class _HomeViewState extends State<HomeView> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ---------- Alinhamento ----------
                     const Text(
                       'Alinhamento',
                       style: TextStyle(
@@ -118,15 +111,14 @@ class _HomeViewState extends State<HomeView> {
                     const SizedBox(height: 8),
                     _buildChipWrap(
                       options: alignmentFilters,
-                      selectedOptions: _controller.selectedAlignments,
+                      selectedOptions: controller.selectedAlignments,
                       onSelect: (val) {
-                        _controller.toggleAlignmentFilter(val);
+                        controller.toggleAlignmentFilter(val);
                         setDialogState(() {});
                       },
                     ),
                     const SizedBox(height: 16),
 
-                    // ---------- Poder ----------
                     const Text(
                       'Poder',
                       style: TextStyle(
@@ -137,15 +129,14 @@ class _HomeViewState extends State<HomeView> {
                     const SizedBox(height: 8),
                     _buildChipWrap(
                       options: powerFilters,
-                      selectedOptions: _controller.selectedPowers,
+                      selectedOptions: controller.selectedPowers,
                       onSelect: (val) {
-                        _controller.togglePowerFilter(val);
+                        controller.togglePowerFilter(val);
                         setDialogState(() {});
                       },
                     ),
                     const SizedBox(height: 16),
 
-                    // ---------- Habilidade ----------
                     const Text(
                       'Habilidade',
                       style: TextStyle(
@@ -156,9 +147,9 @@ class _HomeViewState extends State<HomeView> {
                     const SizedBox(height: 8),
                     _buildChipWrap(
                       options: skillFilters,
-                      selectedOptions: _controller.selectedSkills,
+                      selectedOptions: controller.selectedSkills,
                       onSelect: (val) {
-                        _controller.toggleSkillFilter(val);
+                        controller.toggleSkillFilter(val);
                         setDialogState(() {});
                       },
                     ),
@@ -170,7 +161,7 @@ class _HomeViewState extends State<HomeView> {
           actions: [
             TextButton(
               onPressed: () {
-                _controller.clearFilters();
+                controller.clearFilters();
                 Navigator.of(context).pop();
               },
               child: const Text(
@@ -182,7 +173,8 @@ class _HomeViewState extends State<HomeView> {
               onPressed: () => Navigator.of(context).pop(),
               child: const Text(
                 'Fechar',
-                style: TextStyle(color: marvelRed, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: AppColors.marvelRed, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -204,7 +196,7 @@ class _HomeViewState extends State<HomeView> {
         return FilterChip(
           label: Text(option),
           selected: isSelected,
-          selectedColor: marvelRed,
+          selectedColor: AppColors.marvelRed,
           backgroundColor: Colors.black,
           checkmarkColor: Colors.white,
           labelStyle: TextStyle(
@@ -221,54 +213,55 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  hintText: 'Buscar personagem...',
-                  hintStyle: TextStyle(color: Colors.white38),
-                  border: InputBorder.none,
+    return Consumer<MarvelController>(
+      builder: (context, controller, _) {
+        return Scaffold(
+          appBar: AppBar(
+            title: _isSearching
+                ? TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      hintText: 'Buscar personagem...',
+                      hintStyle: TextStyle(color: Colors.white38),
+                      border: InputBorder.none,
+                    ),
+                    onChanged: (value) => controller.setSearchQuery(value),
+                  )
+                : const Text(
+                    'MCU Collector',
+                    style: TextStyle(
+                        color: AppColors.marvelRed,
+                        fontWeight: FontWeight.bold),
+                  ),
+            centerTitle: false,
+            backgroundColor: Colors.black,
+            actions: [
+              IconButton(
+                icon: Icon(
+                  _isSearching ? Icons.close : Icons.search,
+                  color: AppColors.marvelRed,
                 ),
-                onChanged: (value) => _controller.setSearchQuery(value),
-              )
-            : const Text(
-                'MCU Collector',
-                style: TextStyle(color: marvelRed, fontWeight: FontWeight.bold),
+                tooltip: _isSearching ? 'Fechar busca' : 'Buscar',
+                onPressed: () => _toggleSearch(controller),
               ),
-        centerTitle: false,
-        backgroundColor: Colors.black,
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isSearching ? Icons.close : Icons.search,
-              color: marvelRed,
-            ),
-            tooltip: _isSearching ? 'Fechar busca' : 'Buscar',
-            onPressed: _toggleSearch,
+              const SizedBox(width: 4),
+            ],
           ),
-          const SizedBox(width: 4), // Filtro e Contador foram removidos daqui
-        ],
-      ),
-      drawer: _buildDrawer(context),
-
-      // O Body agora é uma coluna contendo a barra de ações e o GridView
-      body: Column(
-        children: [
-          _buildActionBar(),
-          Expanded(child: _buildBody()),
-        ],
-      ),
-
-      // O floatingActionButton foi removido inteiramente!
+          drawer: _buildDrawer(context),
+          body: Column(
+            children: [
+              _buildActionBar(controller),
+              Expanded(child: _buildBody(controller)),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  // NOVA BARRA DE FERRAMENTAS
-  Widget _buildActionBar() {
+  Widget _buildActionBar(MarvelController controller) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       decoration: BoxDecoration(
@@ -282,11 +275,10 @@ class _HomeViewState extends State<HomeView> {
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Row(
           children: [
-            // 1. Contador
             Text(
-              '${_controller.collectedCount} / ${_controller.totalCount}',
+              '${controller.collectedCount} / ${controller.totalCount}',
               style: const TextStyle(
-                color: marvelRed,
+                color: AppColors.marvelRed,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -295,7 +287,6 @@ class _HomeViewState extends State<HomeView> {
             Container(height: 24, width: 1, color: Colors.white24),
             const SizedBox(width: 16),
 
-            // 2. Toggle "Na Coleção"
             const Text(
               'Na Coleção',
               style: TextStyle(
@@ -306,10 +297,10 @@ class _HomeViewState extends State<HomeView> {
             ),
             const SizedBox(width: 4),
             Switch(
-              value: _controller.showOnlyCollected,
-              onChanged: _controller.toggleShowOnlyCollected,
-              activeThumbColor: marvelRed,
-              activeTrackColor: marvelRed.withValues(alpha: 0.4),
+              value: controller.showOnlyCollected,
+              onChanged: controller.toggleShowOnlyCollected,
+              activeThumbColor: AppColors.marvelRed,
+              activeTrackColor: AppColors.marvelRed.withValues(alpha: 0.4),
               inactiveThumbColor: Colors.grey.shade400,
               inactiveTrackColor: Colors.grey.shade800,
             ),
@@ -317,36 +308,36 @@ class _HomeViewState extends State<HomeView> {
             Container(height: 24, width: 1, color: Colors.white24),
             const SizedBox(width: 16),
 
-            // 3. Filtros de Alinhamento
             ...alignmentFilters.map((option) {
-              final isSelected = _controller.selectedAlignments.contains(option);
+              final isSelected =
+                  controller.selectedAlignments.contains(option);
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: FilterChip(
                   label: Text(option),
                   selected: isSelected,
-                  selectedColor: marvelRed,
+                  selectedColor: AppColors.marvelRed,
                   backgroundColor: Colors.black,
                   checkmarkColor: Colors.white,
                   labelStyle: TextStyle(
                     color: isSelected ? Colors.white : Colors.white70,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                   onSelected: (selected) {
-                    _controller.toggleAlignmentFilter(option);
+                    controller.toggleAlignmentFilter(option);
                   },
                 ),
               );
             }),
             const SizedBox(width: 8),
 
-            // 4. Botão de Filtro (Filtros Avançados)
             IconButton(
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              icon: const Icon(Icons.filter_list, color: marvelRed),
+              icon: const Icon(Icons.filter_list, color: AppColors.marvelRed),
               tooltip: 'Filtros Avançados',
-              onPressed: _showFilterDialog,
+              onPressed: () => _showFilterDialog(controller),
             ),
           ],
         ),
@@ -355,25 +346,23 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget _buildDrawer(BuildContext context) {
-    // Busca o usuário atual logado no Supabase
     final user = Supabase.instance.client.auth.currentUser;
     final userEmail = user?.email ?? 'Agente desconhecido';
 
     return Drawer(
-      backgroundColor: const Color(0xFF121212), // Fundo escuro
+      backgroundColor: AppColors.background,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           UserAccountsDrawerHeader(
-            decoration: BoxDecoration(
-              color: marvelRed, // Vermelho Marvel no cabeçalho
-            ),
-            currentAccountPicture: CircleAvatar(
+            decoration: const BoxDecoration(color: AppColors.marvelRed),
+            currentAccountPicture: const CircleAvatar(
               backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: marvelRed, size: 40),
+              child:
+                  Icon(Icons.person, color: AppColors.marvelRed, size: 40),
             ),
             accountName: const Text(
-              'Agente S.H.I.E.L.D.', // Um placeholder temático
+              'Agente S.H.I.E.L.D.',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -398,23 +387,22 @@ class _HomeViewState extends State<HomeView> {
               color: Colors.white,
             ),
             onTap: () {
-              Navigator.pop(context); // Fecha o drawer
-              // Aqui você pode adicionar o Navigator.push para a tela de perfil no futuro
+              Navigator.pop(context);
             },
           ),
-          const Divider(color: Colors.white24), // Linha divisória suave
+          const Divider(color: Colors.white24),
           ListTile(
-            title: Text(
+            title: const Text(
               'Sair',
-              style: TextStyle(color: marvelRed, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: AppColors.marvelRed, fontWeight: FontWeight.bold),
             ),
-            leading: Icon(Icons.logout, color: marvelRed),
+            leading:
+                const Icon(Icons.logout, color: AppColors.marvelRed),
             onTap: () async {
-              // Lógica real de deslogar do Supabase
               await Supabase.instance.client.auth.signOut();
 
               if (context.mounted) {
-                // Redireciona de volta para a AuthView e limpa o histórico de navegação
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const AuthView()),
                   (route) => false,
@@ -427,12 +415,43 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildBody() {
-    if (_controller.isLoading) {
-      return const Center(child: CircularProgressIndicator(color: marvelRed));
+  Widget _buildBody(MarvelController controller) {
+    if (controller.isLoading) {
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.marvelRed));
     }
 
-    final filtered = _controller.filteredCharacters;
+    if (controller.errorMessage != null && controller.totalCount == 0) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off, color: Colors.white38, size: 64),
+              const SizedBox(height: 16),
+              Text(
+                controller.errorMessage!,
+                style: const TextStyle(color: Colors.white70, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => controller.loadCharacters(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Tentar novamente'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.marvelRed,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final filtered = controller.filteredCharacters;
 
     if (filtered.isEmpty) {
       return const Center(
@@ -455,9 +474,7 @@ class _HomeViewState extends State<HomeView> {
         }
 
         return GridView.builder(
-          padding: const EdgeInsets.all(
-            12,
-          ), // Padding ajustado sem o botão flutuante
+          padding: const EdgeInsets.all(12),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: 0.75,
@@ -467,212 +484,23 @@ class _HomeViewState extends State<HomeView> {
           itemCount: filtered.length,
           itemBuilder: (context, index) {
             final MarvelCharacter character = filtered[index];
-            return _CharacterGridItem(
-              character: character,
-              marvelRed: marvelRed,
+            return GestureDetector(
               onTap: () async {
                 await Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => CharacterDetailView(
                       character: character,
                       onToggleCollected: () =>
-                          _controller.toggleCollected(character.id),
+                          controller.toggleCollected(character.id),
                     ),
                   ),
                 );
               },
+              child: CharacterImageCard(character: character),
             );
           },
         );
       },
-    );
-  }
-}
-
-class _CharacterGridItem extends StatelessWidget {
-  const _CharacterGridItem({
-    required this.character,
-    required this.marvelRed,
-    required this.onTap,
-  });
-
-  final MarvelCharacter character;
-  final Color marvelRed;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Imagem com efeito borrado se não estiver coletado
-            if (character.imageUrl != null)
-              ImageFiltered(
-                imageFilter: ImageFilter.blur(
-                  sigmaX: character.isCollected ? 0.0 : 8.0,
-                  sigmaY: character.isCollected ? 0.0 : 8.0,
-                ),
-                child: Image.network(
-                  character.imageUrl!,
-                  fit: BoxFit.cover,
-                  headers: const {
-                    'User-Agent':
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      color: Colors.grey[900],
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: marvelRed,
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) =>
-                      _buildFallbackAvatar(),
-                ),
-              )
-            else
-              _buildFallbackAvatar(),
-
-            // Sobreposição escura quando NÃO coletado
-            if (!character.isCollected)
-              Container(color: Colors.black.withValues(alpha: 0.4)),
-
-            // Borda vermelha quando coletado
-            if (character.isCollected)
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: marvelRed, width: 3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-
-            // Ícone de check
-            if (character.isCollected)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: marvelRed,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 16),
-                ),
-              ),
-
-            // Tarja com o nome, universo e info extra
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.black.withValues(alpha: 0.9),
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                  ),
-                ),
-                padding: const EdgeInsets.only(
-                  top: 24.0,
-                  bottom: 8.0,
-                  left: 6.0,
-                  right: 6.0,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      character.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      character.universe,
-                      style: TextStyle(
-                        color: Colors.grey.shade400,
-                        fontSize: 9,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (character.powerType != null ||
-                        character.skillType != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        [
-                          if (character.powerType != null) character.powerType,
-                          if (character.skillType != null) character.skillType,
-                        ].join(' • '),
-                        style: TextStyle(
-                          color: marvelRed.withValues(alpha: 0.8),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFallbackAvatar() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.grey.shade900, Colors.grey.shade800],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Center(
-        child: Text(
-          character.name[0].toUpperCase(),
-          style: TextStyle(
-            color: marvelRed,
-            fontSize: 48,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
     );
   }
 }
