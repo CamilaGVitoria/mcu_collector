@@ -252,7 +252,7 @@ class _HomeViewState extends State<HomeView> {
           drawer: _buildDrawer(context),
           body: Column(
             children: [
-              _buildActionBar(controller),
+              _buildActionBar(context, controller),
               Expanded(child: _buildBody(controller)),
             ],
           ),
@@ -261,87 +261,149 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildActionBar(MarvelController controller) {
+  Widget _buildActionBar(BuildContext context, MarvelController controller) {
+    final isDesktop = MediaQuery.of(context).size.width > 800;
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       decoration: BoxDecoration(
         color: Colors.grey.shade900,
         border: const Border(
           bottom: BorderSide(color: Colors.white12, width: 1),
         ),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Row(
-          children: [
-            Text(
-              '${controller.collectedCount} / ${controller.totalCount}',
-              style: const TextStyle(
-                color: AppColors.marvelRed,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Container(height: 24, width: 1, color: Colors.white24),
-            const SizedBox(width: 16),
-
-            const Text(
-              'Na Coleção',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Switch(
-              value: controller.showOnlyCollected,
-              onChanged: controller.toggleShowOnlyCollected,
-              activeThumbColor: AppColors.marvelRed,
-              activeTrackColor: AppColors.marvelRed.withValues(alpha: 0.4),
-              inactiveThumbColor: Colors.grey.shade400,
-              inactiveTrackColor: Colors.grey.shade800,
-            ),
-            const SizedBox(width: 16),
-            Container(height: 24, width: 1, color: Colors.white24),
-            const SizedBox(width: 16),
-
-            ...alignmentFilters.map((option) {
-              final isSelected =
-                  controller.selectedAlignments.contains(option);
-              return Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: FilterChip(
-                  label: Text(option),
-                  selected: isSelected,
-                  selectedColor: AppColors.marvelRed,
-                  backgroundColor: Colors.black,
-                  checkmarkColor: Colors.white,
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : Colors.white70,
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
+      child: isDesktop
+          ? Row(
+              children: [
+                // Divisão 1: Contagem (Esquerda)
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '${controller.collectedCount} / ${controller.totalCount}',
+                      style: const TextStyle(
+                        color: AppColors.marvelRed,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
-                  onSelected: (selected) {
-                    controller.toggleAlignmentFilter(option);
-                  },
                 ),
-              );
-            }),
-            const SizedBox(width: 8),
 
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: const Icon(Icons.filter_list, color: AppColors.marvelRed),
-              tooltip: 'Filtros Avançados',
-              onPressed: () => _showFilterDialog(controller),
+                // Divisões 2 e 3: Na Coleção + Filtros de Alinhamento (Centro)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Na Coleção
+                    const Text(
+                      'Na Coleção',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Switch(
+                      value: controller.showOnlyCollected,
+                      onChanged: controller.toggleShowOnlyCollected,
+                      activeThumbColor: AppColors.marvelRed,
+                      activeTrackColor: AppColors.marvelRed.withValues(alpha: 0.4),
+                      inactiveThumbColor: Colors.grey.shade400,
+                      inactiveTrackColor: Colors.grey.shade800,
+                    ),
+                    const SizedBox(width: 16),
+                    Container(height: 24, width: 1, color: Colors.white24),
+                    const SizedBox(width: 16),
+
+                    // Filtros de Alinhamento
+                    ...alignmentFilters.map((option) {
+                      final isSelected =
+                          controller.selectedAlignments.contains(option);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: FilterChip(
+                          label: Text(option),
+                          selected: isSelected,
+                          selectedColor: AppColors.marvelRed,
+                          backgroundColor: Colors.black,
+                          checkmarkColor: Colors.white,
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : Colors.white70,
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          onSelected: (selected) {
+                            controller.toggleAlignmentFilter(option);
+                          },
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+
+                // Divisão 4: Filtros Avançados (Direita)
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(Icons.filter_list, color: AppColors.marvelRed),
+                      tooltip: 'Filtros Avançados',
+                      onPressed: () => _showFilterDialog(controller),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Divisão 1: Contagem
+                Text(
+                  '${controller.collectedCount} / ${controller.totalCount}',
+                  style: const TextStyle(
+                    color: AppColors.marvelRed,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+
+                // Divisão 2: Na Coleção
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Na Coleção',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Switch(
+                      value: controller.showOnlyCollected,
+                      onChanged: controller.toggleShowOnlyCollected,
+                      activeThumbColor: AppColors.marvelRed,
+                      activeTrackColor: AppColors.marvelRed.withValues(alpha: 0.4),
+                      inactiveThumbColor: Colors.grey.shade400,
+                      inactiveTrackColor: Colors.grey.shade800,
+                    ),
+                  ],
+                ),
+
+                // Divisão 3: Filtros Avançados
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.filter_list, color: AppColors.marvelRed),
+                  tooltip: 'Filtros Avançados',
+                  onPressed: () => _showFilterDialog(controller),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
     );
   }
 
