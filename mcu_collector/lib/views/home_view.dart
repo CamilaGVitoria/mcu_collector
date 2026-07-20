@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:mcu_collector/views/auth_view.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../controllers/marvel_controller.dart';
 import '../models/marvel_character.dart';
 import 'character_detail_view.dart';
@@ -17,26 +19,22 @@ class _HomeViewState extends State<HomeView> {
   final TextEditingController _searchController = TextEditingController();
 
   final List<String> alignmentFilters = [
-    'Todos',
     'Herói',
     'Vilão',
     'Anti-Herói',
+    'Anti-Vilão',
     'Neutro',
   ];
   final List<String> powerFilters = [
-    'Todos',
     'Sem Poderes',
-    'Tecnologia',
-    'Magia',
+    'Modificado Genéticamente',
     'Mutante',
-    'Aprimorado',
+    'Místico',
+    'Sobrenatural',
     'Cósmico',
-    'Divino',
-    'Simbionte',
-    'Radiação',
+    'Divindade',
   ];
   final List<String> skillFilters = [
-    'Todos',
     'Artes Marciais',
     'Tiro com Arco',
     'Espionagem',
@@ -86,15 +84,20 @@ class _HomeViewState extends State<HomeView> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Row(
             children: [
               Icon(Icons.filter_list, color: marvelRed),
               SizedBox(width: 8),
-              Text('Filtros',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+              Text(
+                'Filtros',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
           content: StatefulBuilder(
@@ -105,48 +108,57 @@ class _HomeViewState extends State<HomeView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ---------- Alinhamento ----------
-                    const Text('Alinhamento',
-                        style: TextStyle(
-                            color: Colors.white70,
-                            fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Alinhamento',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     _buildChipWrap(
                       options: alignmentFilters,
-                      selected: _controller.selectedAlignment,
+                      selectedOptions: _controller.selectedAlignments,
                       onSelect: (val) {
-                        _controller.setAlignmentFilter(val);
+                        _controller.toggleAlignmentFilter(val);
                         setDialogState(() {});
                       },
                     ),
                     const SizedBox(height: 16),
 
                     // ---------- Poder ----------
-                    const Text('Poder',
-                        style: TextStyle(
-                            color: Colors.white70,
-                            fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Poder',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     _buildChipWrap(
                       options: powerFilters,
-                      selected: _controller.selectedPower,
+                      selectedOptions: _controller.selectedPowers,
                       onSelect: (val) {
-                        _controller.setPowerFilter(val);
+                        _controller.togglePowerFilter(val);
                         setDialogState(() {});
                       },
                     ),
                     const SizedBox(height: 16),
 
                     // ---------- Habilidade ----------
-                    const Text('Habilidade',
-                        style: TextStyle(
-                            color: Colors.white70,
-                            fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Habilidade',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     _buildChipWrap(
                       options: skillFilters,
-                      selected: _controller.selectedSkill,
+                      selectedOptions: _controller.selectedSkills,
                       onSelect: (val) {
-                        _controller.setSkillFilter(val);
+                        _controller.toggleSkillFilter(val);
                         setDialogState(() {});
                       },
                     ),
@@ -158,19 +170,20 @@ class _HomeViewState extends State<HomeView> {
           actions: [
             TextButton(
               onPressed: () {
-                _controller.setAlignmentFilter('Todos');
-                _controller.setPowerFilter('Todos');
-                _controller.setSkillFilter('Todos');
+                _controller.clearFilters();
                 Navigator.of(context).pop();
               },
-              child: const Text('Limpar Filtros',
-                  style: TextStyle(color: Colors.white54)),
+              child: const Text(
+                'Limpar Filtros',
+                style: TextStyle(color: Colors.white54),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Fechar',
-                  style: TextStyle(
-                      color: marvelRed, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Fechar',
+                style: TextStyle(color: marvelRed, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         );
@@ -180,25 +193,26 @@ class _HomeViewState extends State<HomeView> {
 
   Widget _buildChipWrap({
     required List<String> options,
-    required String selected,
+    required Set<String> selectedOptions,
     required Function(String) onSelect,
   }) {
     return Wrap(
       spacing: 8.0,
       runSpacing: 8.0,
       children: options.map((option) {
-        final isSelected = selected == option;
-        return ChoiceChip(
+        final isSelected = selectedOptions.contains(option);
+        return FilterChip(
           label: Text(option),
           selected: isSelected,
           selectedColor: marvelRed,
           backgroundColor: Colors.black,
+          checkmarkColor: Colors.white,
           labelStyle: TextStyle(
             color: isSelected ? Colors.white : Colors.white70,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
           onSelected: (sel) {
-            if (sel) onSelect(option);
+            onSelect(option);
           },
         );
       }).toList(),
@@ -221,68 +235,212 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 onChanged: (value) => _controller.setSearchQuery(value),
               )
-            : const Text('MCU Collector',
-                style: TextStyle(
-                    color: marvelRed, fontWeight: FontWeight.bold)),
+            : const Text(
+                'MCU Collector',
+                style: TextStyle(color: marvelRed, fontWeight: FontWeight.bold),
+              ),
         centerTitle: false,
         backgroundColor: Colors.black,
         actions: [
           IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search,
-                color: marvelRed),
+            icon: Icon(
+              _isSearching ? Icons.close : Icons.search,
+              color: marvelRed,
+            ),
             tooltip: _isSearching ? 'Fechar busca' : 'Buscar',
             onPressed: _toggleSearch,
           ),
-          IconButton(
-            icon: const Icon(Icons.filter_list, color: marvelRed),
-            tooltip: 'Filtros',
-            onPressed: _showFilterDialog,
-          ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 4), // Filtro e Contador foram removidos daqui
         ],
       ),
-      body: _buildBody(),
-      // Badge flutuante no canto inferior direito com o contador
-      floatingActionButton: _controller.isLoading
-          ? null
-          : Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
+      drawer: _buildDrawer(context),
+
+      // O Body agora é uma coluna contendo a barra de ações e o GridView
+      body: Column(
+        children: [
+          _buildActionBar(),
+          Expanded(child: _buildBody()),
+        ],
+      ),
+
+      // O floatingActionButton foi removido inteiramente!
+    );
+  }
+
+  // NOVA BARRA DE FERRAMENTAS
+  Widget _buildActionBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade900,
+        border: const Border(
+          bottom: BorderSide(color: Colors.white12, width: 1),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Row(
+          children: [
+            // 1. Contador
+            Text(
+              '${_controller.collectedCount} / ${_controller.totalCount}',
+              style: const TextStyle(
                 color: marvelRed,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: marvelRed.withValues(alpha: 0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Text(
-                '${_controller.collectedCount} / ${_controller.totalCount}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
             ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+            const SizedBox(width: 16),
+            Container(height: 24, width: 1, color: Colors.white24),
+            const SizedBox(width: 16),
+
+            // 2. Toggle "Na Coleção"
+            const Text(
+              'Na Coleção',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Switch(
+              value: _controller.showOnlyCollected,
+              onChanged: _controller.toggleShowOnlyCollected,
+              activeThumbColor: marvelRed,
+              activeTrackColor: marvelRed.withValues(alpha: 0.4),
+              inactiveThumbColor: Colors.grey.shade400,
+              inactiveTrackColor: Colors.grey.shade800,
+            ),
+            const SizedBox(width: 16),
+            Container(height: 24, width: 1, color: Colors.white24),
+            const SizedBox(width: 16),
+
+            // 3. Filtros de Alinhamento
+            ...alignmentFilters.map((option) {
+              final isSelected = _controller.selectedAlignments.contains(option);
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: FilterChip(
+                  label: Text(option),
+                  selected: isSelected,
+                  selectedColor: marvelRed,
+                  backgroundColor: Colors.black,
+                  checkmarkColor: Colors.white,
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.white : Colors.white70,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  onSelected: (selected) {
+                    _controller.toggleAlignmentFilter(option);
+                  },
+                ),
+              );
+            }),
+            const SizedBox(width: 8),
+
+            // 4. Botão de Filtro (Filtros Avançados)
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: const Icon(Icons.filter_list, color: marvelRed),
+              tooltip: 'Filtros Avançados',
+              onPressed: _showFilterDialog,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    // Busca o usuário atual logado no Supabase
+    final user = Supabase.instance.client.auth.currentUser;
+    final userEmail = user?.email ?? 'Agente desconhecido';
+
+    return Drawer(
+      backgroundColor: const Color(0xFF121212), // Fundo escuro
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          UserAccountsDrawerHeader(
+            decoration: BoxDecoration(
+              color: marvelRed, // Vermelho Marvel no cabeçalho
+            ),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, color: marvelRed, size: 40),
+            ),
+            accountName: const Text(
+              'Agente S.H.I.E.L.D.', // Um placeholder temático
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            accountEmail: Text(
+              userEmail,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text(
+              'Meu Perfil',
+              style: TextStyle(color: Colors.white),
+            ),
+            leading: const Icon(
+              Icons.account_circle_rounded,
+              color: Colors.white,
+            ),
+            onTap: () {
+              Navigator.pop(context); // Fecha o drawer
+              // Aqui você pode adicionar o Navigator.push para a tela de perfil no futuro
+            },
+          ),
+          const Divider(color: Colors.white24), // Linha divisória suave
+          ListTile(
+            title: Text(
+              'Sair',
+              style: TextStyle(color: marvelRed, fontWeight: FontWeight.bold),
+            ),
+            leading: Icon(Icons.logout, color: marvelRed),
+            onTap: () async {
+              // Lógica real de deslogar do Supabase
+              await Supabase.instance.client.auth.signOut();
+
+              if (context.mounted) {
+                // Redireciona de volta para a AuthView e limpa o histórico de navegação
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const AuthView()),
+                  (route) => false,
+                );
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildBody() {
     if (_controller.isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(color: marvelRed));
+      return const Center(child: CircularProgressIndicator(color: marvelRed));
     }
 
     final filtered = _controller.filteredCharacters;
 
     if (filtered.isEmpty) {
       return const Center(
-          child: Text('Nenhum personagem encontrado.',
-              style: TextStyle(color: Colors.white)));
+        child: Text(
+          'Nenhum personagem encontrado.',
+          style: TextStyle(color: Colors.white),
+        ),
+      );
     }
 
     return LayoutBuilder(
@@ -297,8 +455,9 @@ class _HomeViewState extends State<HomeView> {
         }
 
         return GridView.builder(
-          padding: const EdgeInsets.only(
-              left: 12, right: 12, top: 12, bottom: 80),
+          padding: const EdgeInsets.all(
+            12,
+          ), // Padding ajustado sem o botão flutuante
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             childAspectRatio: 0.75,
@@ -373,7 +532,7 @@ class _CharacterGridItem extends StatelessWidget {
                           color: marvelRed,
                           value: loadingProgress.expectedTotalBytes != null
                               ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
+                                    loadingProgress.expectedTotalBytes!
                               : null,
                         ),
                       ),
@@ -388,9 +547,7 @@ class _CharacterGridItem extends StatelessWidget {
 
             // Sobreposição escura quando NÃO coletado
             if (!character.isCollected)
-              Container(
-                color: Colors.black.withValues(alpha: 0.4),
-              ),
+              Container(color: Colors.black.withValues(alpha: 0.4)),
 
             // Borda vermelha quando coletado
             if (character.isCollected)
@@ -415,11 +572,10 @@ class _CharacterGridItem extends StatelessWidget {
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.5),
                         blurRadius: 4,
-                      )
+                      ),
                     ],
                   ),
-                  child:
-                      const Icon(Icons.check, color: Colors.white, size: 16),
+                  child: const Icon(Icons.check, color: Colors.white, size: 16),
                 ),
               ),
 
@@ -440,16 +596,21 @@ class _CharacterGridItem extends StatelessWidget {
                   ),
                 ),
                 padding: const EdgeInsets.only(
-                    top: 24.0, bottom: 8.0, left: 6.0, right: 6.0),
+                  top: 24.0,
+                  bottom: 8.0,
+                  left: 6.0,
+                  right: 6.0,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       character.name,
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -458,7 +619,9 @@ class _CharacterGridItem extends StatelessWidget {
                     Text(
                       character.universe,
                       style: TextStyle(
-                          color: Colors.grey.shade400, fontSize: 9),
+                        color: Colors.grey.shade400,
+                        fontSize: 9,
+                      ),
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -468,15 +631,14 @@ class _CharacterGridItem extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         [
-                          if (character.powerType != null)
-                            character.powerType,
-                          if (character.skillType != null)
-                            character.skillType,
+                          if (character.powerType != null) character.powerType,
+                          if (character.skillType != null) character.skillType,
                         ].join(' • '),
                         style: TextStyle(
-                            color: marvelRed.withValues(alpha: 0.8),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600),
+                          color: marvelRed.withValues(alpha: 0.8),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                        ),
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -496,10 +658,7 @@ class _CharacterGridItem extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.grey.shade900,
-            Colors.grey.shade800,
-          ],
+          colors: [Colors.grey.shade900, Colors.grey.shade800],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

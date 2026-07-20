@@ -1,52 +1,50 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../models/marvel_character.dart';
-
-/// Serviço responsável pela persistência local dos dados de personagens.
-///
-/// Implementado como **Singleton** para garantir uma única instância
-/// compartilhada em todo o aplicativo, evitando múltiplas conexões
-/// ao SharedPreferences.
 class StorageService {
-  // ---------- Singleton ----------
+  // Singleton
   StorageService._internal();
-
   static final StorageService _instance = StorageService._internal();
-
-  /// Retorna a instância única de [StorageService].
   factory StorageService() => _instance;
 
-  // ---------- Constantes ----------
-  static const String _storageKey = 'mcu_collected_characters';
+  final _supabase = Supabase.instance.client;
 
-  // ---------- Métodos públicos ----------
+  /// Busca os IDs dos personagens que o usuário logado já coletou
+  Future<List<String>> loadCollectedIds() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return [];
 
-  /// Salva a lista de personagens no armazenamento local.
-  ///
-  /// A lista é serializada como JSON antes de ser armazenada.
-  Future<bool> saveCharacters(List<MarvelCharacter> characters) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String encodedData = MarvelCharacter.encodeList(characters);
-    return prefs.setString(_storageKey, encodedData);
-  }
+    try {
+      final response = await _supabase
+          .from('collected_characters')
+          .select('character_id')
+          .eq('user_id', user.id);
 
-  /// Recupera a lista de personagens do armazenamento local.
-  ///
-  /// Retorna uma lista vazia caso não existam dados salvos.
-  Future<List<MarvelCharacter>> loadCharacters() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? jsonString = prefs.getString(_storageKey);
-
-    if (jsonString == null || jsonString.isEmpty) {
+      return (response as List).map((row) => row['character_id'] as String).toList();
+    } catch (e) {
       return [];
     }
-
-    return MarvelCharacter.decodeList(jsonString);
   }
 
-  /// Remove todos os personagens do armazenamento local.
-  Future<bool> clearCharacters() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.remove(_storageKey);
+  /// Adiciona ou remove um personagem da coleção na nuvem
+  Future<void> toggleCharacter(String characterId, bool isCollected) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      if (isCollected) {
+        await _supabase.from('collected_characters').insert({
+          'user_id': user.id,
+          'character_id': characterId,
+        });
+      } else {
+        await _supabase
+            .from('collected_characters')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('character_id', characterId);
+      }
+    } catch (e) {
+      // Falha silenciosa ou adicione um log aqui se necessário
+    }
   }
 }
