@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../models/marvel_character.dart';
 import '../theme/app_colors.dart';
 import '../widgets/character_image_card.dart';
 
 /// Página de detalhes de um personagem do MCU.
-class CharacterDetailView extends StatelessWidget {
+class CharacterDetailView extends StatefulWidget {
   const CharacterDetailView({
     super.key,
     required this.character,
@@ -16,12 +17,23 @@ class CharacterDetailView extends StatelessWidget {
   final VoidCallback onToggleCollected;
 
   @override
+  State<CharacterDetailView> createState() => _CharacterDetailViewState();
+}
+
+class _CharacterDetailViewState extends State<CharacterDetailView> {
+  @override
   Widget build(BuildContext context) {
+    final character = widget.character;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: Text(
+          character.name,
+          style: GoogleFonts.anton(color: Colors.white),
+        ),
+        centerTitle: false,
+        backgroundColor: AppColors.marvelRed,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
@@ -29,15 +41,23 @@ class CharacterDetailView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 16),
+
             // Imagem reutilizando o widget compartilhado
             Center(
               child: ConstrainedBox(
-                constraints:
-                    const BoxConstraints(maxHeight: 400, maxWidth: 300),
+                constraints: const BoxConstraints(
+                  maxHeight: 400,
+                  maxWidth: 300,
+                ),
                 child: AspectRatio(
                   aspectRatio: 0.75,
                   child: CharacterImageCard(
                     character: character,
+                    onToggleCollected: () {
+                      widget.onToggleCollected();
+                      setState(() {});
+                    },
                     checkIconSize: 24.0,
                     checkPadding: 6.0,
                     nameFontSize: 18.0,
@@ -70,22 +90,10 @@ class CharacterDetailView extends StatelessWidget {
 
             // Descrição
             if (character.description != null) ...[
-              const Text(
-                'Sobre',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                character.description!,
-                style: TextStyle(
-                  color: Colors.grey.shade300,
-                  fontSize: 15,
-                  height: 1.6,
-                ),
+              _buildInfoSection(
+                icon: Icons.article,
+                title: 'Sobre',
+                content: character.description!,
               ),
               const SizedBox(height: 24),
             ],
@@ -116,15 +124,14 @@ class CharacterDetailView extends StatelessWidget {
               height: 52,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  onToggleCollected();
-                  Navigator.of(context).pop(true);
+                  widget.onToggleCollected();
+                  setState(() {});
                 },
                 icon: Icon(
                   character.isCollected
                       ? Icons.remove_circle_outline
                       : Icons.add_circle_outline,
-                  color:
-                      character.isCollected ? Colors.white70 : Colors.white,
+                  color: character.isCollected ? Colors.white70 : Colors.white,
                 ),
                 label: Text(
                   character.isCollected
@@ -200,6 +207,7 @@ class CharacterDetailView extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: AppColors.marvelRed, size: 24),
           const SizedBox(width: 12),

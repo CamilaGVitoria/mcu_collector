@@ -12,6 +12,8 @@ class MarvelController extends ChangeNotifier {
   final StorageService _storageService = StorageService();
 
   List<MarvelCharacter> _characters = [];
+  List<MarvelCharacter>? _filteredCache;
+  bool _isFilterDirty = true;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -39,24 +41,35 @@ class MarvelController extends ChangeNotifier {
 
   void toggleShowOnlyCollected(bool value) {
     _showOnlyCollected = value;
+    _invalidateFilterCache();
     notifyListeners();
   }
 
   /// Retorna a lista de personagens aplicando todos os filtros ativos.
   List<MarvelCharacter> get filteredCharacters {
-    return _characters.where((char) {
-      final matchAlignment = _selectedAlignments.isEmpty ||
+    if (!_isFilterDirty && _filteredCache != null) {
+      return _filteredCache!;
+    }
+
+    _filteredCache = _characters.where((char) {
+      final matchAlignment =
+          _selectedAlignments.isEmpty ||
           _selectedAlignments.contains(char.alignment);
 
-      final matchPower = _selectedPowers.isEmpty ||
-          _selectedPowers.any((p) =>
-              char.powerType != null && char.powerType!.contains(p));
+      final matchPower =
+          _selectedPowers.isEmpty ||
+          _selectedPowers.any(
+            (p) => char.powerType != null && char.powerType!.contains(p),
+          );
 
-      final matchSkill = _selectedSkills.isEmpty ||
-          _selectedSkills.any((s) =>
-              char.skillType != null && char.skillType!.contains(s));
+      final matchSkill =
+          _selectedSkills.isEmpty ||
+          _selectedSkills.any(
+            (s) => char.skillType != null && char.skillType!.contains(s),
+          );
 
-      final matchSearch = _searchQuery.isEmpty ||
+      final matchSearch =
+          _searchQuery.isEmpty ||
           char.name.toLowerCase().contains(_searchQuery.toLowerCase());
 
       final matchCollected = !_showOnlyCollected || char.isCollected;
@@ -67,6 +80,14 @@ class MarvelController extends ChangeNotifier {
           matchSearch &&
           matchCollected;
     }).toList();
+
+    _isFilterDirty = false;
+    return _filteredCache!;
+  }
+
+  void _invalidateFilterCache() {
+    _isFilterDirty = true;
+    _filteredCache = null;
   }
 
   void toggleAlignmentFilter(String alignment) {
@@ -75,6 +96,7 @@ class MarvelController extends ChangeNotifier {
     } else {
       _selectedAlignments.add(alignment);
     }
+    _invalidateFilterCache();
     notifyListeners();
   }
 
@@ -84,6 +106,7 @@ class MarvelController extends ChangeNotifier {
     } else {
       _selectedPowers.add(power);
     }
+    _invalidateFilterCache();
     notifyListeners();
   }
 
@@ -93,6 +116,7 @@ class MarvelController extends ChangeNotifier {
     } else {
       _selectedSkills.add(skill);
     }
+    _invalidateFilterCache();
     notifyListeners();
   }
 
@@ -100,11 +124,13 @@ class MarvelController extends ChangeNotifier {
     _selectedAlignments.clear();
     _selectedPowers.clear();
     _selectedSkills.clear();
+    _invalidateFilterCache();
     notifyListeners();
   }
 
   void setSearchQuery(String query) {
     _searchQuery = query;
+    _invalidateFilterCache();
     notifyListeners();
   }
 
@@ -117,21 +143,25 @@ class MarvelController extends ChangeNotifier {
 
     final freshCharacters = await _fetchCharactersFromSupabase();
 
-    if (freshCharacters.isEmpty) {
+    if (freshCharacters.isEmpty && _characters.isEmpty) {
       _errorMessage =
           'Não foi possível carregar os personagens. Verifique sua conexão.';
+    } else if (freshCharacters.isEmpty && _characters.isNotEmpty) {
+      // Mantém a lista anterior e apenas sinaliza o erro
+      _errorMessage = 'Falha ao atualizar. Exibindo dados anteriores.';
+    } else {
+      final collectedIds = await _storageService.loadCollectedIds();
+
+      _characters = freshCharacters.map((character) {
+        if (collectedIds.contains(character.id)) {
+          return character.copyWith(isCollected: true);
+        }
+        return character;
+      }).toList();
     }
 
-    final collectedIds = await _storageService.loadCollectedIds();
-
-    for (var character in freshCharacters) {
-      if (collectedIds.contains(character.id)) {
-        character.isCollected = true;
-      }
-    }
-
-    _characters = freshCharacters;
     _isLoading = false;
+    _invalidateFilterCache();
     notifyListeners();
   }
 
@@ -143,8 +173,7 @@ class MarvelController extends ChangeNotifier {
           .order('name', ascending: true);
 
       return (response as List)
-          .map((json) =>
-              MarvelCharacter.fromJson(json as Map<String, dynamic>))
+          .map((json) => MarvelCharacter.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       debugPrint('Erro ao buscar do Supabase: $e');
@@ -159,14 +188,21 @@ class MarvelController extends ChangeNotifier {
     if (index == -1) return;
 
     final character = _characters[index];
-    character.isCollected = !character.isCollected;
+    _characters[index] = character.copyWith(
+      isCollected: !character.isCollected,
+    );
+    _invalidateFilterCache();
     notifyListeners();
 
     try {
       await _storageService.toggleCharacter(
-          character.id, character.isCollected);
+        _characters[index].id,
+        _characters[index].isCollected,
+      );
     } catch (e) {
-      character.isCollected = !character.isCollected;
+      // Rollback: restaura o estado anterior
+      _characters[index] = character;
+      _invalidateFilterCache();
       notifyListeners();
       debugPrint('Erro ao salvar coleção: $e');
     }

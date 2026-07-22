@@ -11,6 +11,7 @@ class CharacterImageCard extends StatelessWidget {
   const CharacterImageCard({
     super.key,
     required this.character,
+    this.onToggleCollected,
     this.checkIconSize = 16.0,
     this.checkPadding = 4.0,
     this.nameFontSize = 12.0,
@@ -26,6 +27,7 @@ class CharacterImageCard extends StatelessWidget {
   });
 
   final MarvelCharacter character;
+  final VoidCallback? onToggleCollected;
   final double checkIconSize;
   final double checkPadding;
   final double nameFontSize;
@@ -95,26 +97,31 @@ class CharacterImageCard extends StatelessWidget {
               ),
             ),
 
-          // Ícone de check
-          if (character.isCollected)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                padding: EdgeInsets.all(checkPadding),
-                decoration: BoxDecoration(
-                  color: AppColors.marvelRed,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      blurRadius: 4,
-                    ),
-                  ],
+          // Ícone de check ou add
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Material(
+              color: character.isCollected 
+                  ? AppColors.marvelRed 
+                  : Colors.grey.withValues(alpha: 0.8),
+              shape: const CircleBorder(),
+              elevation: 4,
+              shadowColor: Colors.black.withValues(alpha: 0.5),
+              child: InkWell(
+                onTap: onToggleCollected,
+                customBorder: const CircleBorder(),
+                child: Padding(
+                  padding: EdgeInsets.all(checkPadding),
+                  child: Icon(
+                    character.isCollected ? Icons.check : Icons.add, 
+                    color: Colors.white, 
+                    size: checkIconSize,
+                  ),
                 ),
-                child: Icon(Icons.check, color: Colors.white, size: checkIconSize),
               ),
             ),
+          ),
 
           // Tarja com nome, universo e tags
           Positioned(

@@ -36,7 +36,7 @@ class StorageService {
 
     try {
       if (isCollected) {
-        await _supabase.from('collected_characters').insert({
+        await _supabase.from('collected_characters').upsert({
           'user_id': user.id,
           'character_id': characterId,
         });
