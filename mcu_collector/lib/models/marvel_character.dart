@@ -13,7 +13,7 @@ class MarvelCharacter {
   final String? powerType;
   final String? skillType;
   final String? description;
-  bool isCollected;
+  final bool isCollected;
 
   MarvelCharacter({
     required this.id,
@@ -55,6 +55,31 @@ class MarvelCharacter {
       'description': description,
       'isCollected': isCollected,
     };
+  }
+
+  /// Cria uma cópia do personagem com os campos alterados.
+  MarvelCharacter copyWith({
+    String? id,
+    String? name,
+    String? universe,
+    String? imageUrl,
+    String? alignment,
+    String? powerType,
+    String? skillType,
+    String? description,
+    bool? isCollected,
+  }) {
+    return MarvelCharacter(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      universe: universe ?? this.universe,
+      imageUrl: imageUrl ?? this.imageUrl,
+      alignment: alignment ?? this.alignment,
+      powerType: powerType ?? this.powerType,
+      skillType: skillType ?? this.skillType,
+      description: description ?? this.description,
+      isCollected: isCollected ?? this.isCollected,
+    );
   }
 
   /// Serializa uma lista de [MarvelCharacter] para uma String JSON.
