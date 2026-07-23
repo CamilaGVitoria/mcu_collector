@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../models/marvel_character.dart';
 import '../theme/app_colors.dart';
 import '../widgets/character_image_card.dart';
 
-/// Página de detalhes de um personagem do MCU.
 class CharacterDetailView extends StatefulWidget {
   const CharacterDetailView({
     super.key,
@@ -43,7 +41,6 @@ class _CharacterDetailViewState extends State<CharacterDetailView> {
           children: [
             const SizedBox(height: 16),
 
-            // Imagem reutilizando o widget compartilhado
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
@@ -76,7 +73,6 @@ class _CharacterDetailViewState extends State<CharacterDetailView> {
             ),
             const SizedBox(height: 24),
 
-            // Badge de Alinhamento
             if (character.alignment != null) ...[
               Center(
                 child: _buildBadge(
@@ -88,7 +84,6 @@ class _CharacterDetailViewState extends State<CharacterDetailView> {
               const SizedBox(height: 24),
             ],
 
-            // Descrição
             if (character.description != null) ...[
               _buildInfoSection(
                 icon: Icons.article,
@@ -98,7 +93,6 @@ class _CharacterDetailViewState extends State<CharacterDetailView> {
               const SizedBox(height: 24),
             ],
 
-            // Poder
             if (character.powerType != null) ...[
               _buildInfoSection(
                 icon: Icons.bolt,
@@ -108,7 +102,6 @@ class _CharacterDetailViewState extends State<CharacterDetailView> {
               const SizedBox(height: 12),
             ],
 
-            // Habilidade
             if (character.skillType != null) ...[
               _buildInfoSection(
                 icon: Icons.fitness_center,
@@ -118,7 +111,6 @@ class _CharacterDetailViewState extends State<CharacterDetailView> {
               const SizedBox(height: 24),
             ],
 
-            // Botão de Coletar
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -161,8 +153,6 @@ class _CharacterDetailViewState extends State<CharacterDetailView> {
       ),
     );
   }
-
-  // ---------- Widgets auxiliares ----------
 
   Widget _buildBadge({
     required IconData icon,
@@ -239,8 +229,6 @@ class _CharacterDetailViewState extends State<CharacterDetailView> {
       ),
     );
   }
-
-  // ---------- Helpers de alinhamento ----------
 
   IconData _alignmentIcon(String alignment) {
     switch (alignment) {

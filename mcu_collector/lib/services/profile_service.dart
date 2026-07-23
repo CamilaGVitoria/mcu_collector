@@ -2,14 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileService {
-  // Singleton
   ProfileService._internal();
   static final ProfileService _instance = ProfileService._internal();
   factory ProfileService() => _instance;
 
   final _supabase = Supabase.instance.client;
 
-  /// Busca os dados do perfil atual (nome e url da foto)
   Future<Map<String, dynamic>?> getProfile() async {
     final user = _supabase.auth.currentUser;
     if (user == null) return null;
@@ -42,7 +40,6 @@ class ProfileService {
     });
   }
 
-  /// Atualiza a senha do usuário
   Future<void> updatePassword(String newPassword) async {
     if (newPassword.isEmpty) return;
     await _supabase.auth.updateUser(UserAttributes(password: newPassword));

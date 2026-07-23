@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../theme/app_colors.dart';
 import 'home_view.dart';
 
@@ -149,28 +148,13 @@ class _AuthViewState extends State<AuthView> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
-                    'MARVEL',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                      backgroundColor: AppColors.marvelRed,
-                    ),
-                  ),
-                  const Text(
-                    'COLLECTOR',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 4,
-                    ),
+                  const Image(
+                    image: AssetImage('assets/images/logo.webp'),
+                    height: 150,
+                    width: 150,
                   ),
                   const SizedBox(height: 32),
 
-                  // E-mail
                   TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -195,7 +179,6 @@ class _AuthViewState extends State<AuthView> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Senha
                   TextField(
                     controller: _passwordController,
                     obscureText: true,
@@ -219,7 +202,6 @@ class _AuthViewState extends State<AuthView> {
                     ),
                   ),
 
-                  // Confirmar Senha (apenas no cadastro)
                   if (!_isLogin) ...[
                     const SizedBox(height: 16),
                     TextField(
@@ -248,7 +230,6 @@ class _AuthViewState extends State<AuthView> {
 
                   const SizedBox(height: 32),
 
-                  // Botão de Ação
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -282,7 +263,6 @@ class _AuthViewState extends State<AuthView> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Alternar Login / Cadastro
                   TextButton(
                     onPressed: () {
                       setState(() {
