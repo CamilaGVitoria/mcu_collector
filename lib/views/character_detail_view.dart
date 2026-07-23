@@ -1,156 +1,168 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../models/marvel_character.dart';
+import 'package:provider/provider.dart';
+import '../controllers/marvel_controller.dart';
 import '../theme/app_colors.dart';
 import '../widgets/character_image_card.dart';
 
-class CharacterDetailView extends StatefulWidget {
-  const CharacterDetailView({
-    super.key,
-    required this.character,
-    required this.onToggleCollected,
-  });
+class CharacterDetailView extends StatelessWidget {
+  const CharacterDetailView({super.key, required this.characterId});
 
-  final MarvelCharacter character;
-  final VoidCallback onToggleCollected;
+  final String characterId;
 
-  @override
-  State<CharacterDetailView> createState() => _CharacterDetailViewState();
-}
-
-class _CharacterDetailViewState extends State<CharacterDetailView> {
   @override
   Widget build(BuildContext context) {
-    final character = widget.character;
+    return Consumer<MarvelController>(
+      builder: (context, controller, _) {
+        final character = controller.findById(characterId);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          character.name,
-          style: GoogleFonts.anton(color: Colors.white),
-        ),
-        centerTitle: false,
-        backgroundColor: AppColors.marvelRed,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxHeight: 400,
-                  maxWidth: 300,
-                ),
-                child: AspectRatio(
-                  aspectRatio: 0.75,
-                  child: CharacterImageCard(
-                    character: character,
-                    onToggleCollected: () {
-                      widget.onToggleCollected();
-                      setState(() {});
-                    },
-                    checkIconSize: 24.0,
-                    checkPadding: 6.0,
-                    nameFontSize: 18.0,
-                    universeFontSize: 14.0,
-                    tagFontSize: 12.0,
-                    nameMaxLines: 2,
-                    universeMaxLines: 2,
-                    tagMaxLines: 2,
-                    fallbackFontSize: 120.0,
-                    tarjaTopPadding: 32.0,
-                    tarjaBottomPadding: 12.0,
-                    tarjaHorizontalPadding: 12.0,
-                  ),
-                ),
+        if (character == null) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
+              title: Text(
+                'Personagem',
+                style: GoogleFonts.anton(color: Colors.white),
+              ),
+              backgroundColor: AppColors.marvelRed,
+              iconTheme: const IconThemeData(color: Colors.white),
+            ),
+            body: const Center(
+              child: Text(
+                'Personagem não encontrado.',
+                style: TextStyle(color: Colors.white70),
               ),
             ),
-            const SizedBox(height: 24),
+          );
+        }
 
-            if (character.alignment != null) ...[
-              Center(
-                child: _buildBadge(
-                  icon: _alignmentIcon(character.alignment!),
-                  label: character.alignment!,
-                  color: _alignmentColor(character.alignment!),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            if (character.description != null) ...[
-              _buildInfoSection(
-                icon: Icons.article,
-                title: 'Sobre',
-                content: character.description!,
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            if (character.powerType != null) ...[
-              _buildInfoSection(
-                icon: Icons.bolt,
-                title: 'Poder',
-                content: character.powerType!,
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            if (character.skillType != null) ...[
-              _buildInfoSection(
-                icon: Icons.fitness_center,
-                title: 'Habilidade',
-                content: character.skillType!,
-              ),
-              const SizedBox(height: 24),
-            ],
-
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  widget.onToggleCollected();
-                  setState(() {});
-                },
-                icon: Icon(
-                  character.isCollected
-                      ? Icons.remove_circle_outline
-                      : Icons.add_circle_outline,
-                  color: character.isCollected ? Colors.white70 : Colors.white,
-                ),
-                label: Text(
-                  character.isCollected
-                      ? 'Remover da Coleção'
-                      : 'Adicionar à Coleção',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: character.isCollected
-                        ? Colors.white70
-                        : Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: character.isCollected
-                      ? Colors.grey.shade800
-                      : AppColors.marvelRed,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: Text(
+              character.name,
+              style: GoogleFonts.anton(color: Colors.white),
             ),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
+            centerTitle: false,
+            backgroundColor: AppColors.marvelRed,
+            iconTheme: const IconThemeData(color: Colors.white),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxHeight: 400,
+                      maxWidth: 300,
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 0.75,
+                      child: CharacterImageCard(
+                        character: character,
+                        onToggleCollected: () =>
+                            controller.toggleCollected(characterId),
+                        checkIconSize: 24.0,
+                        checkPadding: 6.0,
+                        nameFontSize: 18.0,
+                        universeFontSize: 14.0,
+                        tagFontSize: 12.0,
+                        nameMaxLines: 2,
+                        universeMaxLines: 2,
+                        tagMaxLines: 2,
+                        fallbackFontSize: 120.0,
+                        tarjaTopPadding: 32.0,
+                        tarjaBottomPadding: 12.0,
+                        tarjaHorizontalPadding: 12.0,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                if (character.alignment != null) ...[
+                  Center(
+                    child: _buildBadge(
+                      icon: _alignmentIcon(character.alignment!),
+                      label: character.alignment!,
+                      color: _alignmentColor(character.alignment!),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                if (character.description != null) ...[
+                  _buildInfoSection(
+                    icon: Icons.article,
+                    title: 'Sobre',
+                    content: character.description!,
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                if (character.powerType != null) ...[
+                  _buildInfoSection(
+                    icon: Icons.bolt,
+                    title: 'Poder',
+                    content: character.powerType!,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                if (character.skillType != null) ...[
+                  _buildInfoSection(
+                    icon: Icons.fitness_center,
+                    title: 'Habilidade',
+                    content: character.skillType!,
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: () => controller.toggleCollected(characterId),
+                    icon: Icon(
+                      character.isCollected
+                          ? Icons.remove_circle_outline
+                          : Icons.add_circle_outline,
+                      color: character.isCollected
+                          ? Colors.white70
+                          : Colors.white,
+                    ),
+                    label: Text(
+                      character.isCollected
+                          ? 'Remover da Coleção'
+                          : 'Adicionar à Coleção',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: character.isCollected
+                            ? Colors.white70
+                            : Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: character.isCollected
+                          ? Colors.grey.shade800
+                          : AppColors.marvelRed,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
