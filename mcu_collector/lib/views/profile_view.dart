@@ -14,7 +14,6 @@ class _ProfileViewState extends State<ProfileView> {
   final _nameController = TextEditingController();
   final _avatarUrlController = TextEditingController();
 
-  // Controllers para a seção de senha
   final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmNewPasswordController = TextEditingController();
@@ -51,13 +50,11 @@ class _ProfileViewState extends State<ProfileView> {
   }
 
   Future<void> _saveProfile() async {
-    // 1. Validações da seção de senha (se estiver expandida)
     if (_isEditingPassword) {
       final currentPass = _currentPasswordController.text.trim();
       final newPass = _newPasswordController.text.trim();
       final confirmPass = _confirmNewPasswordController.text.trim();
 
-      // Verifica se a pessoa abriu a aba mas não preencheu tudo
       if (currentPass.isNotEmpty ||
           newPass.isNotEmpty ||
           confirmPass.isNotEmpty) {
@@ -77,7 +74,6 @@ class _ProfileViewState extends State<ProfileView> {
         setState(() => _isLoading = true);
 
         try {
-          // Reautentica o usuário para verificar se a "Senha Atual" está correta
           final userEmail = Supabase.instance.client.auth.currentUser?.email;
           if (userEmail != null) {
             await Supabase.instance.client.auth.signInWithPassword(
@@ -86,7 +82,6 @@ class _ProfileViewState extends State<ProfileView> {
             );
           }
 
-          // Se a senha atual estiver correta, atualiza para a nova
           await _profileService.updatePassword(newPass);
         } on AuthException catch (_) {
           setState(() => _isLoading = false);
@@ -103,7 +98,6 @@ class _ProfileViewState extends State<ProfileView> {
     setState(() => _isLoading = true);
 
     try {
-      // 2. Salva os dados públicos do perfil (Nome e Imagem)
       await _profileService.updateProfile(
         name: _nameController.text.trim(),
         avatarUrl: _avatarUrlController.text.trim(),
@@ -111,7 +105,7 @@ class _ProfileViewState extends State<ProfileView> {
 
       if (mounted) {
         _showSnackBar('Perfil atualizado com sucesso!');
-        Navigator.pop(context, true); // Retorna 'true' para atualizar a Home
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
@@ -174,7 +168,6 @@ class _ProfileViewState extends State<ProfileView> {
                   : Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Pré-visualização do Avatar
                         CircleAvatar(
                           radius: 50,
                           backgroundColor: Colors.grey.shade900,
@@ -202,17 +195,14 @@ class _ProfileViewState extends State<ProfileView> {
                           controller: _avatarUrlController,
                           label: 'Link da Foto de Perfil (URL)',
                           icon: Icons.link,
-                          onChanged: (val) =>
-                              setState(() {}), // Atualiza a foto em tempo real
+                          onChanged: (val) => setState(() {}),
                         ),
                         const SizedBox(height: 16),
 
-                        // Menu Sanfona (ExpansionTile) para Alterar a Senha
                         Theme(
-                          data: Theme.of(context).copyWith(
-                            dividerColor: Colors
-                                .transparent, // Remove a linha feia nativa do widget
-                          ),
+                          data: Theme.of(
+                            context,
+                          ).copyWith(dividerColor: Colors.transparent),
                           child: ExpansionTile(
                             title: const Text(
                               'Alterar Senha',
@@ -231,7 +221,6 @@ class _ProfileViewState extends State<ProfileView> {
                             onExpansionChanged: (expanded) {
                               setState(() {
                                 _isEditingPassword = expanded;
-                                // Limpa os campos se o usuário fechar a aba
                                 if (!expanded) {
                                   _currentPasswordController.clear();
                                   _newPasswordController.clear();

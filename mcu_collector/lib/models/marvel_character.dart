@@ -1,9 +1,5 @@
 import 'dart:convert';
 
-/// Modelo que representa um personagem do universo Marvel.
-///
-/// Contém informações básicas do personagem e um flag [isCollected]
-/// para indicar se o usuário já o adicionou à sua coleção.
 class MarvelCharacter {
   final String id;
   final String name;
@@ -27,7 +23,6 @@ class MarvelCharacter {
     this.isCollected = false,
   });
 
-  /// Cria uma instância de [MarvelCharacter] a partir de um [Map] JSON.
   factory MarvelCharacter.fromJson(Map<String, dynamic> json) {
     return MarvelCharacter(
       id: json['id']?.toString() ?? '',
@@ -42,7 +37,6 @@ class MarvelCharacter {
     );
   }
 
-  /// Converte a instância para um [Map] compatível com JSON.
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -57,7 +51,6 @@ class MarvelCharacter {
     };
   }
 
-  /// Cria uma cópia do personagem com os campos alterados.
   MarvelCharacter copyWith({
     String? id,
     String? name,
@@ -82,12 +75,9 @@ class MarvelCharacter {
     );
   }
 
-  /// Serializa uma lista de [MarvelCharacter] para uma String JSON.
   static String encodeList(List<MarvelCharacter> characters) {
     return jsonEncode(characters.map((c) => c.toJson()).toList());
   }
-
-  /// Deserializa uma String JSON para uma lista de [MarvelCharacter].
   static List<MarvelCharacter> decodeList(String jsonString) {
     final List<dynamic> jsonList = jsonDecode(jsonString) as List<dynamic>;
     return jsonList

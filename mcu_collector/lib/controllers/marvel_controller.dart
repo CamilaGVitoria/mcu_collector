@@ -1,13 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../models/marvel_character.dart';
 import '../services/storage_service.dart';
 
-/// Controller responsável por gerenciar o estado da lista de personagens.
-///
-/// Utiliza [ChangeNotifier] para notificar a View sobre mudanças de estado,
-/// fazendo a ponte entre a camada de apresentação e o [StorageService].
 class MarvelController extends ChangeNotifier {
   final StorageService _storageService = StorageService();
 
@@ -17,7 +12,7 @@ class MarvelController extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  // ---------- Getters ----------
+  // getters 
 
   List<MarvelCharacter> get characters => List.unmodifiable(_characters);
   bool get isLoading => _isLoading;
@@ -25,7 +20,7 @@ class MarvelController extends ChangeNotifier {
   int get collectedCount => _characters.where((c) => c.isCollected).length;
   int get totalCount => _characters.length;
 
-  // ---------- Filtros & Busca ----------
+  // filtros e busca 
 
   final Set<String> _selectedAlignments = {};
   final Set<String> _selectedPowers = {};
@@ -45,7 +40,6 @@ class MarvelController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Retorna a lista de personagens aplicando todos os filtros ativos.
   List<MarvelCharacter> get filteredCharacters {
     if (!_isFilterDirty && _filteredCache != null) {
       return _filteredCache!;
@@ -134,8 +128,6 @@ class MarvelController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---------- Carregamento ----------
-
   Future<void> loadCharacters() async {
     _isLoading = true;
     _errorMessage = null;
@@ -147,7 +139,6 @@ class MarvelController extends ChangeNotifier {
       _errorMessage =
           'Não foi possível carregar os personagens. Verifique sua conexão.';
     } else if (freshCharacters.isEmpty && _characters.isNotEmpty) {
-      // Mantém a lista anterior e apenas sinaliza o erro
       _errorMessage = 'Falha ao atualizar. Exibindo dados anteriores.';
     } else {
       final collectedIds = await _storageService.loadCollectedIds();
@@ -181,7 +172,7 @@ class MarvelController extends ChangeNotifier {
     }
   }
 
-  // ---------- Coleção ----------
+  // coleção 
 
   Future<void> toggleCollected(String id) async {
     final int index = _characters.indexWhere((c) => c.id == id);
@@ -200,7 +191,6 @@ class MarvelController extends ChangeNotifier {
         _characters[index].isCollected,
       );
     } catch (e) {
-      // Rollback: restaura o estado anterior
       _characters[index] = character;
       _invalidateFilterCache();
       notifyListeners();

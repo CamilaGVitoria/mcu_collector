@@ -55,7 +55,6 @@ class _HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     _profileFuture = ProfileService().getProfile();
-    // Carrega os personagens após o primeiro frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MarvelController>().loadCharacters();
     });
@@ -296,7 +295,6 @@ class _HomeViewState extends State<HomeView> {
           child: isDesktop
               ? Row(
                   children: [
-                    // Divisão 1: Contagem (Esquerda)
                     Expanded(
                       child: Align(
                         alignment: Alignment.centerLeft,
@@ -311,11 +309,9 @@ class _HomeViewState extends State<HomeView> {
                       ),
                     ),
 
-                    // Divisões 2 e 3: Na Coleção + Filtros de Alinhamento (Centro)
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Na Coleção
                         const Text(
                           'Na Coleção',
                           style: TextStyle(
@@ -342,7 +338,6 @@ class _HomeViewState extends State<HomeView> {
                         Container(height: 24, width: 1, color: Colors.white24),
                         const SizedBox(width: 16),
 
-                        // Filtros de Alinhamento
                         ...alignmentFilters.map((option) {
                           final isSelected = controller.selectedAlignments
                               .contains(option);
@@ -373,8 +368,6 @@ class _HomeViewState extends State<HomeView> {
                         }),
                       ],
                     ),
-
-                    // Divisão 4: Filtros Avançados (Direita)
                     Expanded(
                       child: Align(
                         alignment: Alignment.centerRight,
@@ -395,7 +388,6 @@ class _HomeViewState extends State<HomeView> {
               : Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Divisão 1: Contagem
                     Text(
                       '${controller.collectedCount} / ${controller.totalCount}',
                       style: const TextStyle(
@@ -405,7 +397,6 @@ class _HomeViewState extends State<HomeView> {
                       ),
                     ),
 
-                    // Divisão 2: Na Coleção
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -434,7 +425,6 @@ class _HomeViewState extends State<HomeView> {
                       ],
                     ),
 
-                    // Divisão 3: Filtros Avançados
                     IconButton(
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -513,14 +503,10 @@ class _HomeViewState extends State<HomeView> {
                   color: Colors.white,
                 ),
                 onTap: () async {
-                  Navigator.pop(context); // Fecha o drawer antes de navegar
-
-                  // Navega para a tela de perfil e aguarda o retorno
+                  Navigator.pop(context);
                   final bool? profileUpdated = await Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const ProfileView()),
                   );
-
-                  // Se o perfil foi salvo, força a reconstrução da HomeView para atualizar o Drawer
                   if (profileUpdated == true && mounted) {
                     setState(() {
                       _profileFuture = ProfileService().getProfile();
@@ -639,7 +625,8 @@ class _HomeViewState extends State<HomeView> {
               },
               child: CharacterImageCard(
                 character: character,
-                onToggleCollected: () => controller.toggleCollected(character.id),
+                onToggleCollected: () =>
+                    controller.toggleCollected(character.id),
               ),
             );
           },
