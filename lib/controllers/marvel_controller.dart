@@ -20,6 +20,11 @@ class MarvelController extends ChangeNotifier {
   int get collectedCount => _characters.where((c) => c.isCollected).length;
   int get totalCount => _characters.length;
 
+  MarvelCharacter? findById(String id) {
+    final index = _characters.indexWhere((c) => c.id == id);
+    return index == -1 ? null : _characters[index];
+  }
+
   // filtros e busca
 
   final Set<String> _selectedAlignments = {};

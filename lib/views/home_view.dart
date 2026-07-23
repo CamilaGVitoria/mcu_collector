@@ -615,11 +615,8 @@ class _HomeViewState extends State<HomeView> {
               onTap: () async {
                 await Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => CharacterDetailView(
-                      character: character,
-                      onToggleCollected: () =>
-                          controller.toggleCollected(character.id),
-                    ),
+                    builder: (_) =>
+                        CharacterDetailView(characterId: character.id),
                   ),
                 );
               },

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/profile_service.dart';
 import '../theme/app_colors.dart';
 import 'home_view.dart';
 
@@ -14,6 +15,8 @@ class _AuthViewState extends State<AuthView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _usernameController = TextEditingController();
+  final _avatarUrlController = TextEditingController();
 
   bool _isLoading = false;
   bool _isLogin = true;
@@ -81,6 +84,12 @@ class _AuthViewState extends State<AuthView> {
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
         );
+
+        // Criar o perfil no banco de dados
+        await ProfileService().updateProfile(
+          name: _usernameController.text.trim(),
+          avatarUrl: _avatarUrlController.text.trim(),
+        );
       }
 
       if (!mounted) return;
@@ -113,6 +122,8 @@ class _AuthViewState extends State<AuthView> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _usernameController.dispose();
+    _avatarUrlController.dispose();
     super.dispose();
   }
 
@@ -226,6 +237,50 @@ class _AuthViewState extends State<AuthView> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _usernameController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Nome de Agente (opcional)',
+                        labelStyle: const TextStyle(color: Colors.white70),
+                        prefixIcon: const Icon(
+                          Icons.badge,
+                          color: AppColors.marvelRed,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey.shade800),
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: AppColors.marvelRed,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _avatarUrlController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Link da Foto de Perfil (opcional)',
+                        labelStyle: const TextStyle(color: Colors.white70),
+                        prefixIcon: const Icon(
+                          Icons.link,
+                          color: AppColors.marvelRed,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey.shade800),
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(
+                            color: AppColors.marvelRed,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
 
                   const SizedBox(height: 32),
@@ -270,6 +325,8 @@ class _AuthViewState extends State<AuthView> {
                         _emailController.clear();
                         _passwordController.clear();
                         _confirmPasswordController.clear();
+                        _usernameController.clear();
+                        _avatarUrlController.clear();
                       });
                     },
                     child: Text(
