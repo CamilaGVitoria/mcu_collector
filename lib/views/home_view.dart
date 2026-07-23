@@ -1,16 +1,13 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../controllers/marvel_controller.dart';
 import '../models/marvel_character.dart';
 import '../theme/app_colors.dart';
 import '../widgets/character_image_card.dart';
 import 'auth_view.dart';
 import 'character_detail_view.dart';
-import 'profile_view.dart';
-import '../services/profile_service.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -22,7 +19,6 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
-  Future<Map<String, dynamic>?>? _profileFuture;
 
   final List<String> alignmentFilters = [
     'Herói',
@@ -54,7 +50,7 @@ class _HomeViewState extends State<HomeView> {
   @override
   void initState() {
     super.initState();
-    _profileFuture = ProfileService().getProfile();
+    // Carrega os personagens após o primeiro frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MarvelController>().loadCharacters();
     });
@@ -178,9 +174,7 @@ class _HomeViewState extends State<HomeView> {
               child: const Text(
                 'Fechar',
                 style: TextStyle(
-                  color: AppColors.marvelRed,
-                  fontWeight: FontWeight.bold,
-                ),
+                    color: AppColors.marvelRed, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -205,9 +199,8 @@ class _HomeViewState extends State<HomeView> {
           selectedColor: AppColors.marvelRed,
           backgroundColor: Colors.black,
           checkmarkColor: Colors.white,
-          side: const BorderSide(color: AppColors.marvelRed),
           labelStyle: TextStyle(
-            color: Colors.white,
+            color: isSelected ? Colors.white : Colors.white70,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
           onSelected: (sel) {
@@ -236,17 +229,19 @@ class _HomeViewState extends State<HomeView> {
                     ),
                     onChanged: (value) => controller.setSearchQuery(value),
                   )
-                : Text(
+                : const Text(
                     'MCU Collector',
-                    style: GoogleFonts.anton(color: Colors.white),
+                    style: TextStyle(
+                        color: AppColors.marvelRed,
+                        fontWeight: FontWeight.bold),
                   ),
             centerTitle: false,
-            backgroundColor: AppColors.marvelRed,
+            backgroundColor: Colors.black,
             actions: [
               IconButton(
                 icon: Icon(
                   _isSearching ? Icons.close : Icons.search,
-                  color: Colors.white,
+                  color: AppColors.marvelRed,
                 ),
                 tooltip: _isSearching ? 'Fechar busca' : 'Buscar',
                 onPressed: () => _toggleSearch(controller),
@@ -255,23 +250,11 @@ class _HomeViewState extends State<HomeView> {
             ],
           ),
           drawer: _buildDrawer(context),
-          body: Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: const AssetImage('assets/images/background.webp'),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(
-                  Colors.black.withValues(alpha: 0.7),
-                  BlendMode.darken,
-                ),
-              ),
-            ),
-            child: Column(
-              children: [
-                _buildActionBar(context, controller),
-                Expanded(child: _buildBody(controller)),
-              ],
-            ),
+          body: Column(
+            children: [
+              _buildActionBar(context, controller),
+              Expanded(child: _buildBody(controller)),
+            ],
           ),
         );
       },
@@ -281,114 +264,22 @@ class _HomeViewState extends State<HomeView> {
   Widget _buildActionBar(BuildContext context, MarvelController controller) {
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.5),
-            border: const Border(
-              bottom: BorderSide(color: Colors.white12, width: 1),
-            ),
-          ),
-          child: isDesktop
-              ? Row(
-                  children: [
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          '${controller.collectedCount} / ${controller.totalCount}',
-                          style: const TextStyle(
-                            color: AppColors.marvelRed,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Na Coleção',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Switch(
-                          value: controller.showOnlyCollected,
-                          onChanged: controller.toggleShowOnlyCollected,
-                          activeThumbColor: AppColors.marvelRed,
-                          activeTrackColor: AppColors.marvelRed.withValues(
-                            alpha: 0.4,
-                          ),
-                          inactiveThumbColor: Colors.grey.shade400,
-                          inactiveTrackColor: Colors.grey.shade800,
-                          trackOutlineColor: WidgetStateProperty.all(
-                            AppColors.marvelRed,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Container(height: 24, width: 1, color: Colors.white24),
-                        const SizedBox(width: 16),
-
-                        ...alignmentFilters.map((option) {
-                          final isSelected = controller.selectedAlignments
-                              .contains(option);
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4.0,
-                            ),
-                            child: FilterChip(
-                              label: Text(option),
-                              selected: isSelected,
-                              selectedColor: AppColors.marvelRed,
-                              backgroundColor: Colors.black,
-                              checkmarkColor: Colors.white,
-                              side: const BorderSide(
-                                color: AppColors.marvelRed,
-                              ),
-                              labelStyle: TextStyle(
-                                color: Colors.white,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                              onSelected: (selected) {
-                                controller.toggleAlignmentFilter(option);
-                              },
-                            ),
-                          );
-                        }),
-                      ],
-                    ),
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: IconButton(
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: const Icon(
-                            Icons.filter_list,
-                            color: AppColors.marvelRed,
-                          ),
-                          tooltip: 'Filtros Avançados',
-                          onPressed: () => _showFilterDialog(controller),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade900,
+        border: const Border(
+          bottom: BorderSide(color: Colors.white12, width: 1),
+        ),
+      ),
+      child: isDesktop
+          ? Row(
+              children: [
+                // Divisão 1: Contagem (Esquerda)
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
                       '${controller.collectedCount} / ${controller.totalCount}',
                       style: const TextStyle(
                         color: AppColors.marvelRed,
@@ -396,49 +287,123 @@ class _HomeViewState extends State<HomeView> {
                         fontSize: 16,
                       ),
                     ),
+                  ),
+                ),
 
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Na Coleção',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Switch(
-                          value: controller.showOnlyCollected,
-                          onChanged: controller.toggleShowOnlyCollected,
-                          activeThumbColor: AppColors.marvelRed,
-                          activeTrackColor: AppColors.marvelRed.withValues(
-                            alpha: 0.4,
-                          ),
-                          inactiveThumbColor: Colors.grey.shade400,
-                          inactiveTrackColor: Colors.grey.shade800,
-                          trackOutlineColor: WidgetStateProperty.all(
-                            AppColors.marvelRed,
-                          ),
-                        ),
-                      ],
+                // Divisões 2 e 3: Na Coleção + Filtros de Alinhamento (Centro)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Na Coleção
+                    const Text(
+                      'Na Coleção',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
+                    const SizedBox(width: 4),
+                    Switch(
+                      value: controller.showOnlyCollected,
+                      onChanged: controller.toggleShowOnlyCollected,
+                      activeThumbColor: AppColors.marvelRed,
+                      activeTrackColor: AppColors.marvelRed.withValues(alpha: 0.4),
+                      inactiveThumbColor: Colors.grey.shade400,
+                      inactiveTrackColor: Colors.grey.shade800,
+                    ),
+                    const SizedBox(width: 16),
+                    Container(height: 24, width: 1, color: Colors.white24),
+                    const SizedBox(width: 16),
 
-                    IconButton(
+                    // Filtros de Alinhamento
+                    ...alignmentFilters.map((option) {
+                      final isSelected =
+                          controller.selectedAlignments.contains(option);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: FilterChip(
+                          label: Text(option),
+                          selected: isSelected,
+                          selectedColor: AppColors.marvelRed,
+                          backgroundColor: Colors.black,
+                          checkmarkColor: Colors.white,
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : Colors.white70,
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                          onSelected: (selected) {
+                            controller.toggleAlignmentFilter(option);
+                          },
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+
+                // Divisão 4: Filtros Avançados (Direita)
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: IconButton(
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
-                      icon: const Icon(
-                        Icons.filter_list,
-                        color: AppColors.marvelRed,
-                      ),
+                      icon: const Icon(Icons.filter_list, color: AppColors.marvelRed),
                       tooltip: 'Filtros Avançados',
                       onPressed: () => _showFilterDialog(controller),
                     ),
+                  ),
+                ),
+              ],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Divisão 1: Contagem
+                Text(
+                  '${controller.collectedCount} / ${controller.totalCount}',
+                  style: const TextStyle(
+                    color: AppColors.marvelRed,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+
+                // Divisão 2: Na Coleção
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Na Coleção',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Switch(
+                      value: controller.showOnlyCollected,
+                      onChanged: controller.toggleShowOnlyCollected,
+                      activeThumbColor: AppColors.marvelRed,
+                      activeTrackColor: AppColors.marvelRed.withValues(alpha: 0.4),
+                      inactiveThumbColor: Colors.grey.shade400,
+                      inactiveTrackColor: Colors.grey.shade800,
+                    ),
                   ],
                 ),
-        ),
-      ),
+
+                // Divisão 3: Filtros Avançados
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.filter_list, color: AppColors.marvelRed),
+                  tooltip: 'Filtros Avançados',
+                  onPressed: () => _showFilterDialog(controller),
+                ),
+              ],
+            ),
     );
   }
 
@@ -448,95 +413,66 @@ class _HomeViewState extends State<HomeView> {
 
     return Drawer(
       backgroundColor: AppColors.background,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      child: FutureBuilder<Map<String, dynamic>?>(
-        future: _profileFuture,
-        builder: (context, snapshot) {
-          final profile = snapshot.data;
-          final displayName =
-              profile?['display_name']?.toString().isNotEmpty == true
-              ? profile!['display_name']
-              : 'Agente S.H.I.E.L.D.';
-          final avatarUrl = profile?['avatar_url']?.toString();
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          UserAccountsDrawerHeader(
+            decoration: const BoxDecoration(color: AppColors.marvelRed),
+            currentAccountPicture: const CircleAvatar(
+              backgroundColor: Colors.white,
+              child:
+                  Icon(Icons.person, color: AppColors.marvelRed, size: 40),
+            ),
+            accountName: const Text(
+              'Agente S.H.I.E.L.D.',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            accountEmail: Text(
+              userEmail,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ListTile(
+            title: const Text(
+              'Meu Perfil',
+              style: TextStyle(color: Colors.white),
+            ),
+            leading: const Icon(
+              Icons.account_circle_rounded,
+              color: Colors.white,
+            ),
+            onTap: () {
+              Navigator.pop(context);
+            },
+          ),
+          const Divider(color: Colors.white24),
+          ListTile(
+            title: const Text(
+              'Sair',
+              style: TextStyle(
+                  color: AppColors.marvelRed, fontWeight: FontWeight.bold),
+            ),
+            leading:
+                const Icon(Icons.logout, color: AppColors.marvelRed),
+            onTap: () async {
+              await Supabase.instance.client.auth.signOut();
 
-          return ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              UserAccountsDrawerHeader(
-                decoration: const BoxDecoration(color: AppColors.marvelRed),
-                currentAccountPicture: CircleAvatar(
-                  backgroundColor: Colors.white,
-                  backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-                      ? NetworkImage(avatarUrl)
-                      : null,
-                  child: avatarUrl == null || avatarUrl.isEmpty
-                      ? const Icon(
-                          Icons.person,
-                          color: AppColors.marvelRed,
-                          size: 40,
-                        )
-                      : null,
-                ),
-                accountName: Text(
-                  displayName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                accountEmail: Text(
-                  userEmail,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              ListTile(
-                title: const Text(
-                  'Meu Perfil',
-                  style: TextStyle(color: Colors.white),
-                ),
-                leading: const Icon(
-                  Icons.account_circle_rounded,
-                  color: Colors.white,
-                ),
-                onTap: () async {
-                  Navigator.pop(context);
-                  final bool? profileUpdated = await Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ProfileView()),
-                  );
-                  if (profileUpdated == true && mounted) {
-                    setState(() {
-                      _profileFuture = ProfileService().getProfile();
-                    });
-                  }
-                },
-              ),
-              const Divider(color: Colors.white24),
-              ListTile(
-                title: const Text(
-                  'Sair',
-                  style: TextStyle(
-                    color: AppColors.marvelRed,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                leading: const Icon(Icons.logout, color: AppColors.marvelRed),
-                onTap: () async {
-                  await Supabase.instance.client.auth.signOut();
-                  if (context.mounted) {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const AuthView()),
-                      (route) => false,
-                    );
-                  }
-                },
-              ),
-            ],
-          );
-        },
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const AuthView()),
+                  (route) => false,
+                );
+              }
+            },
+          ),
+        ],
       ),
     );
   }
@@ -544,8 +480,7 @@ class _HomeViewState extends State<HomeView> {
   Widget _buildBody(MarvelController controller) {
     if (controller.isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.marvelRed),
-      );
+          child: CircularProgressIndicator(color: AppColors.marvelRed));
     }
 
     if (controller.errorMessage != null && controller.totalCount == 0) {
@@ -623,11 +558,7 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 );
               },
-              child: CharacterImageCard(
-                character: character,
-                onToggleCollected: () =>
-                    controller.toggleCollected(character.id),
-              ),
+              child: CharacterImageCard(character: character),
             );
           },
         );

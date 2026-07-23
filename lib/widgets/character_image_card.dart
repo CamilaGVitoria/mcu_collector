@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import '../models/marvel_character.dart';
 import '../theme/app_colors.dart';
 
+/// Widget reutilizável que exibe a imagem de um personagem com efeitos visuais.
+///
+/// Aplica blur e overlay escura quando o personagem não está coletado,
+/// borda vermelha e ícone de check quando coletado, e tarja de informações.
 class CharacterImageCard extends StatelessWidget {
   const CharacterImageCard({
     super.key,
     required this.character,
-    this.onToggleCollected,
     this.checkIconSize = 16.0,
     this.checkPadding = 4.0,
     this.nameFontSize = 12.0,
@@ -23,7 +26,6 @@ class CharacterImageCard extends StatelessWidget {
   });
 
   final MarvelCharacter character;
-  final VoidCallback? onToggleCollected;
   final double checkIconSize;
   final double checkPadding;
   final double nameFontSize;
@@ -44,6 +46,7 @@ class CharacterImageCard extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
+          // Imagem com blur quando não coletado
           if (character.imageUrl != null)
             ImageFiltered(
               imageFilter: ImageFilter.blur(
@@ -66,7 +69,7 @@ class CharacterImageCard extends StatelessWidget {
                         color: AppColors.marvelRed,
                         value: loadingProgress.expectedTotalBytes != null
                             ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
+                                loadingProgress.expectedTotalBytes!
                             : null,
                       ),
                     ),
@@ -79,9 +82,11 @@ class CharacterImageCard extends StatelessWidget {
           else
             _buildFallbackAvatar(),
 
+          // Overlay escura quando não coletado
           if (!character.isCollected)
             Container(color: Colors.black.withValues(alpha: 0.4)),
 
+          // Borda vermelha quando coletado
           if (character.isCollected)
             Container(
               decoration: BoxDecoration(
@@ -90,31 +95,28 @@ class CharacterImageCard extends StatelessWidget {
               ),
             ),
 
-          Positioned(
-            top: 8,
-            right: 8,
-            child: Material(
-              color: character.isCollected
-                  ? AppColors.marvelRed
-                  : Colors.grey.withValues(alpha: 0.8),
-              shape: const CircleBorder(),
-              elevation: 4,
-              shadowColor: Colors.black.withValues(alpha: 0.5),
-              child: InkWell(
-                onTap: onToggleCollected,
-                customBorder: const CircleBorder(),
-                child: Padding(
-                  padding: EdgeInsets.all(checkPadding),
-                  child: Icon(
-                    character.isCollected ? Icons.check : Icons.add,
-                    color: Colors.white,
-                    size: checkIconSize,
-                  ),
+          // Ícone de check
+          if (character.isCollected)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                padding: EdgeInsets.all(checkPadding),
+                decoration: BoxDecoration(
+                  color: AppColors.marvelRed,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
+                child: Icon(Icons.check, color: Colors.white, size: checkIconSize),
               ),
             ),
-          ),
 
+          // Tarja com nome, universo e tags
           Positioned(
             bottom: 0,
             left: 0,

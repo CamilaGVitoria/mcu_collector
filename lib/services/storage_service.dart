@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+/// Serviço responsável pela persistência de dados no Supabase.
 class StorageService {
   StorageService._internal();
   static final StorageService _instance = StorageService._internal();
@@ -8,7 +9,7 @@ class StorageService {
 
   final _supabase = Supabase.instance.client;
 
-  // busca os IDs dos personagens que o usuário logado já coletou
+  /// Busca os IDs dos personagens que o usuário logado já coletou.
   Future<List<String>> loadCollectedIds() async {
     final user = _supabase.auth.currentUser;
     if (user == null) return [];
@@ -28,14 +29,14 @@ class StorageService {
     }
   }
 
-  // adiciona ou remove um personagem da coleção na nuvem
+  /// Adiciona ou remove um personagem da coleção na nuvem.
   Future<void> toggleCharacter(String characterId, bool isCollected) async {
     final user = _supabase.auth.currentUser;
     if (user == null) return;
 
     try {
       if (isCollected) {
-        await _supabase.from('collected_characters').upsert({
+        await _supabase.from('collected_characters').insert({
           'user_id': user.id,
           'character_id': characterId,
         });
